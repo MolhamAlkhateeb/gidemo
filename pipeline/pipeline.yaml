@@ -44,9 +44,9 @@ Resources:
             Principal: { Service: codebuild.amazonaws.com }
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
-        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
-        - arn:aws:iam::aws:policy/AmazonECS_FullAccess
+        # Deploy step runs `cloudformation deploy` which creates IAM roles, ECS, ALB, etc.
+        # Admin is used for the demo; scope down with a dedicated CFN service role for prod.
+        - arn:aws:iam::aws:policy/AdministratorAccess
       Policies:
         - PolicyName: build-inline
           PolicyDocument:
