@@ -6,8 +6,8 @@ version: 0.2
 phases:
   build:
     commands:
-      - BACKEND_IMAGE=$(python -c "import json;print(json.load(open('images.json'))['BackendImage'])")
-      - FRONTEND_IMAGE=$(python -c "import json;print(json.load(open('images.json'))['FrontendImage'])")
+      - BACKEND_IMAGE=$(jq -r '.BackendImage' images.json)
+      - FRONTEND_IMAGE=$(jq -r '.FrontendImage' images.json)
       - echo Deploying service stack with $BACKEND_IMAGE and $FRONTEND_IMAGE
       - |
         aws cloudformation deploy \
