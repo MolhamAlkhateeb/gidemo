@@ -28,3 +28,4 @@ artifacts:
   files:
     - images.json
     - infra/service.yaml
+    - pipeline/buildspec-deploy.yml
