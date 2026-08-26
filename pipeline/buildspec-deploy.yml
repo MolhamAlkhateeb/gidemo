@@ -1,0 +1,23 @@
+version: 0.2
+
+# Deploys the ECS service stack with the freshly built images.
+# Expects env vars: ENV_NAME, AWS_DEFAULT_REGION, DB_USERNAME, DB_PASSWORD, BEDROCK_REGION.
+
+phases:
+  build:
+    commands:
+      - BACKEND_IMAGE=$(python -c "import json;print(json.load(open('images.json'))['BackendImage'])")
+      - FRONTEND_IMAGE=$(python -c "import json;print(json.load(open('images.json'))['FrontendImage'])")
+      - echo Deploying service stack with $BACKEND_IMAGE and $FRONTEND_IMAGE
+      - |
+        aws cloudformation deploy \
+          --stack-name $ENV_NAME-service \
+          --template-file infra/service.yaml \
+          --capabilities CAPABILITY_IAM \
+          --parameter-overrides \
+            EnvironmentName=$ENV_NAME \
+            BackendImage=$BACKEND_IMAGE \
+            FrontendImage=$FRONTEND_IMAGE \
+            DBUsername=$DB_USERNAME \
+            DBPassword=$DB_PASSWORD \
+            BedrockRegion=$BEDROCK_REGION

@@ -1,0 +1,17 @@
+# Backend (.NET)
+backend/bin/
+backend/obj/
+
+# Frontend (Node)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Env & secrets
+.env
+*.pem
+
+# IDE
+.vs/
+.idea/
+*.user

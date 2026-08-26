@@ -1,0 +1,30 @@
+version: 0.2
+
+# Builds and pushes the backend and frontend Docker images to ECR.
+# Expects env vars: AWS_ACCOUNT_ID, AWS_DEFAULT_REGION, ENV_NAME.
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION:-latest}
+      - BACKEND_REPO=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ENV_NAME-backend
+      - FRONTEND_REPO=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ENV_NAME-frontend
+  build:
+    commands:
+      - echo Building backend image...
+      - docker build -t $BACKEND_REPO:$IMAGE_TAG ./backend
+      - docker build -t $FRONTEND_REPO:$IMAGE_TAG ./frontend
+  post_build:
+    commands:
+      - echo Pushing images...
+      - docker push $BACKEND_REPO:$IMAGE_TAG
+      - docker push $FRONTEND_REPO:$IMAGE_TAG
+      - printf '{"BackendImage":"%s","FrontendImage":"%s"}' "$BACKEND_REPO:$IMAGE_TAG" "$FRONTEND_REPO:$IMAGE_TAG" > images.json
+      - cat images.json
+
+artifacts:
+  files:
+    - images.json
+    - infra/service.yaml
