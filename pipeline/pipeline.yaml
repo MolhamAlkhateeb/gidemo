@@ -24,7 +24,7 @@ Parameters:
     NoEcho: true
   BedrockRegion:
     Type: String
-    Default: us-east-1
+    Default: us-west-2
 
 Resources:
   ArtifactBucket:

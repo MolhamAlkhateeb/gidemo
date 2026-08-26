@@ -21,7 +21,7 @@ Parameters:
     Default: chatbot
   BedrockRegion:
     Type: String
-    Default: us-east-1
+    Default: us-west-2
 
 Resources:
   # ---------------- Cluster & logging ----------------
@@ -172,7 +172,7 @@ Resources:
           PortMappings: [{ ContainerPort: 8080 }]
           Environment:
             - Name: AWS__Region
-              Value: !Ref BedrockRegion
+              Value: !Ref "AWS::Region"
             - Name: Bedrock__Region
               Value: !Ref BedrockRegion
             - Name: Storage__S3Bucket
