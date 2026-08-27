@@ -177,7 +177,7 @@ Resources:
       UserPoolId: !Ref UserPool
       ClientName: !Sub "${EnvironmentName}-web"
       GenerateSecret: false
-      ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH, ALLOW_REFRESH_TOKEN_AUTH]
+      ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH, ALLOW_USER_PASSWORD_AUTH, ALLOW_REFRESH_TOKEN_AUTH]
       SupportedIdentityProviders: [COGNITO]
 
   # ---------------- Container registries ----------------

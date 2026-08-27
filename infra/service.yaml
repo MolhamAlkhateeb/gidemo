@@ -183,6 +183,8 @@ Resources:
                 - PoolId: { Fn::ImportValue: !Sub "${EnvironmentName}-UserPoolId" }
             - Name: Cognito__Audience
               Value: { Fn::ImportValue: !Sub "${EnvironmentName}-UserPoolClientId" }
+            - Name: Cognito__Region
+              Value: !Ref "AWS::Region"
             - Name: ConnectionStrings__Postgres
               Value: !Sub
                 - "Host=${DbHost};Port=5432;Database=chatbot;Username=${DBUsername};Password=${DBPassword}"

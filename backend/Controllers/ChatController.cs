@@ -176,12 +176,13 @@ public class ChatController : ControllerBase
             IsOutput = true
         };
 
-        // Reference the stored image via the raw endpoint so it survives history reloads.
+        // Reference the stored image via a presigned URL so <img> works without an auth header.
+        var imageUrl = await _storage.PresignGetAsync(key, TimeSpan.FromDays(7));
         var assistantMessage = new ChatMessage
         {
             SessionId = session.Id,
             Role = MessageRole.Assistant,
-            Content = $"![generated image](/api/files/{file.Id}/raw)",
+            Content = $"![generated image]({imageUrl})",
             ModelIdUsed = modelId
         };
         assistantMessage.Attachments.Add(file);

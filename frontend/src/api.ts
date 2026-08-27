@@ -1,4 +1,5 @@
 import type { ChatSession, ModelInfo } from "./types";
+import { getToken, logout } from "./auth";
 
 export interface PresignUploadResponse {
   fileId: string;
@@ -8,26 +9,38 @@ export interface PresignUploadResponse {
 
 const BASE = "/api";
 
+// Auth header for API calls (empty when not logged in / auth disabled).
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const token = getToken();
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
+
 async function json<T>(res: Response): Promise<T> {
+  if (res.status === 401) {
+    logout();
+    throw new Error("Unauthorized");
+  }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json() as Promise<T>;
 }
 
 export const api = {
-  listModels: () => fetch(`${BASE}/models`).then(json<ModelInfo[]>),
+  listModels: () =>
+    fetch(`${BASE}/models`, { headers: authHeaders() }).then(json<ModelInfo[]>),
 
-  listSessions: () => fetch(`${BASE}/sessions`).then(json<ChatSession[]>),
+  listSessions: () =>
+    fetch(`${BASE}/sessions`, { headers: authHeaders() }).then(json<ChatSession[]>),
 
   getSession: (id: string) =>
-    fetch(`${BASE}/sessions/${id}`).then(json<ChatSession>),
+    fetch(`${BASE}/sessions/${id}`, { headers: authHeaders() }).then(json<ChatSession>),
 
   deleteSession: (id: string) =>
-    fetch(`${BASE}/sessions/${id}`, { method: "DELETE" }),
+    fetch(`${BASE}/sessions/${id}`, { method: "DELETE", headers: authHeaders() }),
 
   presignUpload: (fileName: string, contentType: string, sizeBytes: number) =>
     fetch(`${BASE}/files/presign`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ fileName, contentType, sizeBytes }),
     }).then(json<PresignUploadResponse>),
 
@@ -41,7 +54,7 @@ export const api = {
   textToSpeech: (text: string, voiceId?: string) =>
     fetch(`${BASE}/speech/tts`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ text, voiceId }),
     }).then((r) => r.blob()),
 };
@@ -71,10 +84,14 @@ export async function streamChat(
   try {
     const res = await fetch(`${BASE}/chat/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(body),
       signal,
     });
+    if (res.status === 401) {
+      logout();
+      return;
+    }
     if (!res.body) throw new Error("No response body");
 
     const reader = res.body.getReader();

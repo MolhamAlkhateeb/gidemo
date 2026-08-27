@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, streamChat } from "./api";
+import { loadConfig, getToken, logout, type AppConfig } from "./auth";
 import { CapabilityFilter, type CapabilityKey } from "./components/CapabilityFilter";
 import { Composer } from "./components/Composer";
+import { Login } from "./components/Login";
 import { MessageList } from "./components/MessageList";
 import { ModelInfoCard } from "./components/ModelInfoCard";
 import { ModelPicker } from "./components/ModelPicker";
@@ -9,6 +11,8 @@ import { Sidebar } from "./components/Sidebar";
 import { deriveUiMode, type ChatMessage, type ChatSession, type ModelInfo } from "./types";
 
 export default function App() {
+  const [config, setConfig] = useState<AppConfig | null>(null);
+  const [authed, setAuthed] = useState(false);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [selectedModelId, setSelectedModelId] = useState("automatic");
   const [capFilters, setCapFilters] = useState<Set<CapabilityKey>>(new Set());
@@ -47,10 +51,21 @@ export default function App() {
     }
   }, [filteredModels, selectedModelId]);
 
+  // Resolve auth state on load: skip login when auth is disabled or a token exists.
   useEffect(() => {
+    loadConfig()
+      .then((c) => {
+        setConfig(c);
+        if (!c.authEnabled || getToken()) setAuthed(true);
+      })
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (!authed) return;
     api.listModels().then(setModels).catch(console.error);
     refreshSessions();
-  }, []);
+  }, [authed]);
 
   const refreshSessions = () =>
     api.listSessions().then(setSessions).catch(console.error);
@@ -139,6 +154,18 @@ export default function App() {
       ? "bg-gradient-to-r from-amber-500 to-red-500 text-white"
       : "bg-base-200";
 
+  if (!config) {
+    return (
+      <div className="min-h-full flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg" />
+      </div>
+    );
+  }
+
+  if (config.authEnabled && !authed) {
+    return <Login config={config} onSuccess={() => setAuthed(true)} />;
+  }
+
   return (
     <div className="flex h-full">
       <Sidebar
@@ -168,6 +195,11 @@ export default function App() {
               ? "🎬 Video Studio"
               : "💬 Chat"}
           </span>
+          {config.authEnabled && (
+            <button className="btn btn-ghost btn-sm ml-auto" onClick={logout}>
+              Sign out
+            </button>
+          )}
         </header>
 
         {selectedModel && selectedModel.id !== "automatic" && (
