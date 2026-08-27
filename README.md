@@ -166,14 +166,14 @@ aws cloudformation deploy `
 
 ---
 
-## Values to send me
+## Configuration values you'll need
 
-To finish wiring things up, share these **non-secret** values (never the access key/secret):
+Gather these (all **non-secret** — never commit the access key/secret):
 
 - AWS region for storage (default `us-east-1`) and Bedrock region (default `us-west-2`)
 - After deploying `chatbot-foundation`: the stack **Outputs** (bucket name, user pool id,
   user pool client id, ECR repo URIs) — visible in the CloudFormation console.
-- GitHub connection ARN + `owner/repo` (if using the pipeline)
+- GitHub connection ARN + `owner/repo` (for the pipeline)
 
 ## Notes & next steps
 
