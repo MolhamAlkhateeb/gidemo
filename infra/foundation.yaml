@@ -180,6 +180,26 @@ Resources:
       ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH, ALLOW_USER_PASSWORD_AUTH, ALLOW_REFRESH_TOKEN_AUTH]
       SupportedIdentityProviders: [COGNITO]
 
+  # Access-control groups (surface as the cognito:groups claim on the user's token).
+  AdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Admin
+      Description: Full access to all models
+      UserPoolId: !Ref UserPool
+  TextGenerationGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: TextGeneration
+      Description: Access to text-generation models only
+      UserPoolId: !Ref UserPool
+  MediaGenerationGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: MediaGeneration
+      Description: Access to image and video generation models
+      UserPoolId: !Ref UserPool
+
   # ---------------- Container registries ----------------
   BackendRepo:
     Type: AWS::ECR::Repository

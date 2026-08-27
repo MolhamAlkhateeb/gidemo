@@ -25,6 +25,7 @@ function uid(): string {
 export default function App() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [authed, setAuthed] = useState(false);
+  const [roles, setRoles] = useState<string[]>([]);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [selectedModelId, setSelectedModelId] = useState("automatic");
   const [capFilters, setCapFilters] = useState<Set<CapabilityKey>>(new Set());
@@ -76,6 +77,7 @@ export default function App() {
   useEffect(() => {
     if (!authed) return;
     api.listModels().then(setModels).catch(console.error);
+    api.me().then((m) => setRoles(m.roles)).catch(console.error);
     refreshSessions();
   }, [authed]);
 
@@ -207,6 +209,9 @@ export default function App() {
               ? "🎬 Video Studio"
               : "💬 Chat"}
           </span>
+          {roles.length > 0 && (
+            <span className="badge badge-outline">{roles.join(", ")}</span>
+          )}
           {config.authEnabled && (
             <button className="btn btn-ghost btn-sm ml-auto" onClick={logout}>
               Sign out
@@ -217,6 +222,14 @@ export default function App() {
         {selectedModel && selectedModel.id !== "automatic" && (
           <div className="p-3">
             <ModelInfoCard model={selectedModel} />
+          </div>
+        )}
+
+        {authed && models.length === 0 && (
+          <div className="p-3">
+            <div className="alert alert-warning">
+              Your account has no model access. Ask an administrator to add you to a group.
+            </div>
           </div>
         )}
 

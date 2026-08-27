@@ -11,4 +11,16 @@ public static class UserContext
             ?? ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
         return sub ?? "dev-user";
     }
+
+    /// <summary>
+    /// Effective access roles. Cognito groups arrive as one or more "cognito:groups" claims.
+    /// When auth is disabled (local dev), the caller is treated as an Admin.
+    /// </summary>
+    public static IReadOnlyCollection<string> GetRoles(this HttpContext ctx, IConfiguration config)
+    {
+        if (config.GetValue<bool>("DisableAuth"))
+            return new[] { Services.ModelAccess.Admin };
+
+        return ctx.User.FindAll("cognito:groups").Select(c => c.Value).ToArray();
+    }
 }

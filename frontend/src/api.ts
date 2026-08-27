@@ -28,6 +28,11 @@ export const api = {
   listModels: () =>
     fetch(`${BASE}/models`, { headers: authHeaders() }).then(json<ModelInfo[]>),
 
+  me: () =>
+    fetch(`${BASE}/me`, { headers: authHeaders() }).then(
+      json<{ userId: string; roles: string[] }>
+    ),
+
   listSessions: () =>
     fetch(`${BASE}/sessions`, { headers: authHeaders() }).then(json<ChatSession[]>),
 

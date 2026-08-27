@@ -27,5 +27,6 @@ phases:
 artifacts:
   files:
     - images.json
+    - infra/foundation.yaml
     - infra/service.yaml
     - pipeline/buildspec-deploy.yml

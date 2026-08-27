@@ -1,6 +1,6 @@
 version: 0.2
 
-# Deploys the ECS service stack with the freshly built images.
+# Deploys the foundation (infra) and service stacks. All AWS calls run inside CodeBuild.
 # Expects env vars: ENV_NAME, AWS_DEFAULT_REGION, DB_USERNAME, DB_PASSWORD, BEDROCK_REGION.
 
 phases:
@@ -8,12 +8,23 @@ phases:
     commands:
       - BACKEND_IMAGE=$(jq -r '.BackendImage' images.json)
       - FRONTEND_IMAGE=$(jq -r '.FrontendImage' images.json)
+      - echo Deploying foundation stack...
+      - |
+        aws cloudformation deploy \
+          --stack-name $ENV_NAME-foundation \
+          --template-file infra/foundation.yaml \
+          --capabilities CAPABILITY_IAM \
+          --no-fail-on-empty-changeset \
+          --parameter-overrides \
+            EnvironmentName=$ENV_NAME \
+            DBPassword=$DB_PASSWORD
       - echo Deploying service stack with $BACKEND_IMAGE and $FRONTEND_IMAGE
       - |
         aws cloudformation deploy \
           --stack-name $ENV_NAME-service \
           --template-file infra/service.yaml \
           --capabilities CAPABILITY_IAM \
+          --no-fail-on-empty-changeset \
           --parameter-overrides \
             EnvironmentName=$ENV_NAME \
             BackendImage=$BACKEND_IMAGE \

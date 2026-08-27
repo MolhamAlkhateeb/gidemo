@@ -20,17 +20,20 @@ public class ChatController : ControllerBase
     private readonly IBedrockService _bedrock;
     private readonly IStorageService _storage;
     private readonly IDocumentParser _docParser;
+    private readonly IConfiguration _config;
 
     public ChatController(
         AppDbContext db,
         IBedrockService bedrock,
         IStorageService storage,
-        IDocumentParser docParser)
+        IDocumentParser docParser,
+        IConfiguration config)
     {
         _db = db;
         _bedrock = bedrock;
         _storage = storage;
         _docParser = docParser;
+        _config = config;
     }
 
     /// <summary>Streams a model response as Server-Sent Events and persists the turn.</summary>
@@ -69,8 +72,18 @@ public class ChatController : ControllerBase
         // Build the effective prompt, appending extracted document text.
         var effectivePrompt = await BuildPromptAsync(userId, req, ct);
 
-        // Resolve model (automatic routing) using the live catalog.
+        // Resolve model (automatic routing) using the live catalog, filtered by the user's role.
         var models = await _bedrock.ListModelsAsync(ct);
+        var roles = HttpContext.GetRoles(_config);
+        var allowed = ModelAccess.Filter(roles, models);
+
+        if (allowed.Count == 0)
+        {
+            await WriteEvent("error",
+                new { message = "Your account has no model access. Contact an administrator." }, ct);
+            return;
+        }
+
         var modelId = req.ModelId;
         if (modelId == "automatic")
         {
@@ -78,9 +91,17 @@ public class ChatController : ControllerBase
                 await _db.Files.AnyAsync(f => req.AttachmentIds.Contains(f.Id)
                     && f.UserId == userId && f.Kind == ModalityKind.Image, ct);
 
-            modelId = await _bedrock.RouteAsync(effectivePrompt, models, hasImageAttachment, ct);
+            // Route only among models the user is allowed to use.
+            modelId = await _bedrock.RouteAsync(effectivePrompt, allowed, hasImageAttachment, ct);
             await WriteEvent("routed", new { modelId }, ct);
         }
+        else if (!allowed.Any(m => m.Id == modelId))
+        {
+            await WriteEvent("error",
+                new { message = "You don't have access to this model.", modelId }, ct);
+            return;
+        }
+
         var caps = models.FirstOrDefault(m => m.Id == modelId)?.Capabilities
             ?? ModelCapabilityMap.Resolve(modelId).Caps;
 
