@@ -17,6 +17,8 @@ adapts its layout to each model's capabilities (chat / image studio / video stud
 - **Streaming** text responses (SSE), with graceful in-chat error messages.
 - **Voice**: speak your prompt and have replies read back aloud.
 - **Files**: upload docx/xlsx (parsed to text) and images; stored in S3.
+- **Auth**: Cognito login (no self-signup — users are created by an admin). Disabled
+  automatically for local development.
 
 ## Stack
 
@@ -47,6 +49,25 @@ infra/       CloudFormation (foundation.yaml, service.yaml)
 pipeline/    CodePipeline template + buildspecs
 docker-compose.yml
 ```
+
+## Authentication
+
+- **Local dev:** auth is disabled (`DisableAuth=true`), so you're auto-signed in as a dev user.
+- **Deployed:** the backend validates Cognito JWTs and the SPA shows a **Sign in** page.
+  There is **no self-signup** — an admin creates users. The public `/api/config` endpoint
+  tells the SPA the Cognito region/client id and whether auth is on.
+
+### Create users manually
+
+```powershell
+$pool = "<your-user-pool-id>"   # from the chatbot-foundation stack outputs
+
+aws cognito-idp admin-create-user --user-pool-id $pool --username "alice@example.com" --message-action SUPPRESS --region us-east-1
+aws cognito-idp admin-set-user-password --user-pool-id $pool --username "alice@example.com" --password "Str0ngPass!" --permanent --region us-east-1
+```
+
+Password policy: ≥8 chars with upper, lower and a number. If you skip the second command,
+the user is prompted to set a new password on first sign-in (the login page handles that).
 
 ## Local development
 
@@ -163,6 +184,8 @@ To finish wiring things up, share these **non-secret** values (never the access 
   wired in for higher accuracy via presigned upload + a Transcribe job.
 - **Video generation** (Nova Reel) is not wired yet — it uses the asynchronous
   `StartAsyncInvoke` + S3 polling flow.
-- In production, generated images render via presigned S3 URLs (the local `/api/files/{id}/raw`
-  proxy relies on auth being disabled in dev).
+- Generated images are referenced by **presigned S3 URLs** (valid 7 days) so they render
+  in the browser without an auth header.
+- The deployed app is served over **HTTP** (no TLS). Add an ACM certificate + HTTPS listener
+  (and a domain) for a production-grade, secure URL.
 - EF Core migrations run automatically on backend startup.
