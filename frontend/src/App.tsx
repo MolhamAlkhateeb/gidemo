@@ -10,6 +10,18 @@ import { ModelPicker } from "./components/ModelPicker";
 import { Sidebar } from "./components/Sidebar";
 import { deriveUiMode, type ChatMessage, type ChatSession, type ModelInfo } from "./types";
 
+// crypto.randomUUID exists only in secure contexts (HTTPS/localhost); fall back for plain HTTP.
+function uid(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export default function App() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [authed, setAuthed] = useState(false);
@@ -92,7 +104,7 @@ export default function App() {
     setBusy(true);
     setStreaming("");
     const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: uid(),
       role: "User",
       content: prompt,
       createdAt: new Date().toISOString(),
@@ -119,7 +131,7 @@ export default function App() {
           setMessages((m) => [
             ...m,
             {
-              id: crypto.randomUUID(),
+              id: uid(),
               role: "Assistant",
               content: acc,
               modelIdUsed: usedModel,
@@ -134,7 +146,7 @@ export default function App() {
           setMessages((m) => [
             ...m,
             {
-              id: crypto.randomUUID(),
+              id: uid(),
               role: "Assistant",
               content: `⚠️ ${msg}`,
               createdAt: new Date().toISOString(),
